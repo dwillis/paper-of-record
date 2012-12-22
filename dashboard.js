@@ -1,5 +1,5 @@
 (function() {
-  var Filing, FilingView, Filings, SaveSettingsView, Settings, appSettings, committeeTypes, filings, title, windowFocused;
+  var Mention, MentionView, Mentions, SaveSettingsView, Settings, appSettings, mentions, title, windowFocused;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
@@ -8,46 +8,56 @@
     child.__super__ = parent.prototype;
     return child;
   }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  filings = null;
+  mentions = null;
   appSettings = null;
   title = '';
   windowFocused = true;
-  committeeTypes = {
-    'C': 'Communication Cost',
-    'D': 'Delegate',
-    'E': 'Electioneering Communication',
-    'H': 'House',
-    'I': 'Independent Expenditor (Person or Group)',
-    'N': 'PAC - Nonqualified',
-    'O': 'Independent Expenditure-Only (Super PAC)',
-    'P': 'Presidential',
-    'Q': 'PAC - Qualified',
-    'S': 'Senate',
-    'U': 'Single Candidate Independent Expenditure',
-    'X': 'Party Nonqualified',
-    'Y': 'Party Qualified',
-    'Z': 'National Party Nonfederal Account'
-  };
-  Filing = (function() {
-    __extends(Filing, Backbone.Model);
-    function Filing() {
-      Filing.__super__.constructor.apply(this, arguments);
+  chamberTypes = {
+      'House': 'House',
+      'Senate': 'Senate',
+      'Extensions': 'House'
+    };
+  Mention = (function() {
+    __extends(Mention, Backbone.Model);
+    function Mention() {
+      Mention.__super__.constructor.apply(this, arguments);
     }
-    Filing.prototype.initialize = function() {
+    Mention.prototype.initialize = function() {
       this.set({
-        committee_id: this.get('fec_committee_id')
+        url: this.get('origin_url')
       });
       this.set({
-        full_committee_type: committeeTypes[this.get('committee_type')]
+        capitolwords_url: this.get('capitolwords_url')
       });
       this.set({
-        raised: this.get('receipts_total')
+        congress: this.get('congress')
       });
       this.set({
-        report_period: this.get('report_period')
+        chamber: chamberTypes[this.get('chamber')]
       });
       this.set({
-        view: new FilingView({
+        date: this.get('date')
+      });
+      this.set({
+        title: this.get('title')
+      });
+      this.set({
+        speaker: this.get('speaker_first') + ' ' + this.get('speaker_last')
+      });
+      this.set({
+        speaker_state: this.get('speaker_state')
+      });
+      this.set({
+        speaker_bioguide: "http://bioguide.congress.gov/scripts/biodisplay.pl?index="+this.get('bioguide_id')
+      });
+      this.set({
+        party: this.get('speaker_party')
+      });
+      this.set({
+        speaking: this.get('speaking')
+      });
+      this.set({
+        view: new MentionView({
           model: this
         })
       });
@@ -55,70 +65,48 @@
         return this.alert();
       }
     };
-    Filing.prototype.alert = function() {
-      var amendment, icon, popup;
-      if (!appSettings.get('showNotifications')) {
-        return;
-      }
-      if (!window.webkitNotifications) {
-        console.log('No support for desktop notifications');
-      }
-      if (window.webkitNotifications.checkPermission() > 0) {
-        this.requestPermission(this.alert);
-      }
-      icon = 'http://query.nictusa.com/images/fec1.gif';
-      amendment = '';
-      if (this.get('is_amendment')) {
-        amendment = ' [amendment] ';
-      }
-      popup = window.webkitNotifications.createNotification(icon, this.get('committee_name'), "" + (this.get('report_title')) + amendment);
-      return popup.show();
-    };
-    Filing.prototype.requestPermission = function(callback) {
+    Mention.prototype.requestPermission = function(callback) {
       return window.webkitNotifications.requestPermission(callback);
     };
-    return Filing;
+    return Mention;
   })();
-  Filings = (function() {
-    __extends(Filings, Backbone.Collection);
-    function Filings() {
-      Filings.__super__.constructor.apply(this, arguments);
+  Mentions = (function() {
+    __extends(Mentions, Backbone.Collection);
+    function Mentions() {
+      Mentions.__super__.constructor.apply(this, arguments);
     }
-    Filings.prototype.model = Filing;
-    Filings.prototype.getFilings = function(initialLoad) {
-      var newFilings;
+    Mentions.prototype.model = Mention;
+    Mentions.prototype.getMentions = function(initialLoad) {
+      var newMentions;
       if (initialLoad == null) {
         initialLoad = false;
       }
       if (!(appSettings.get('apikey').length > 0)) {
         return;
       }
-      newFilings = false;
+      newMentions = false;
       $.ajax({
         dataType: 'jsonp',
-        url: 'http://api.nytimes.com/svc/elections/us/v3/finances/2012/filings.json',
+        url: 'http://capitolwords.org/api/text.json?phrase=new+york+times&start_date=2012-01-01&',
         data: {
-          'api-key': $("#apikey").val()
+          'apikey': $("#apikey").val()
         },
         success: __bind(function(data) {
           var result, _i, _len, _ref, _results;
-          if (data.status !== 'OK') {
-            throw new Error("Error. Status: " + data.status);
-          }
           _ref = data.results;
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             result = _ref[_i];
-            _results.push(!this.get(result.fec_uri) ? (result = _(result).extend({
-              id: result.fec_uri,
+            _results.push(!this.get(result.id) ? (result = _(result).extend({
+              id: result.id,
               timestamp: new Date(),
               initialLoad: initialLoad
-            }), this.add(result), newFilings = true) : void 0);
+            }), this.add(result), newMentions = true) : void 0);
           }
           return _results;
         }, this)
       });
-      if (newFilings) {
+      if (newMentions) {
         if (!initialLoad) {
           if (!windowFocused) {
             $("title").html("[*] " + title);
@@ -126,23 +114,23 @@
         }
       }
       return setTimeout((__bind(function() {
-        return this.getFilings();
+        return this.getMentions();
       }, this)), 900000);
     };
-    return Filings;
+    return Mentions;
   })();
-  FilingView = (function() {
-    __extends(FilingView, Backbone.View);
-    function FilingView() {
-      FilingView.__super__.constructor.apply(this, arguments);
+  MentionView = (function() {
+    __extends(MentionView, Backbone.View);
+    function MentionView() {
+      MentionView.__super__.constructor.apply(this, arguments);
     }
-    FilingView.prototype.tagName = 'tr';
-    FilingView.prototype.initialize = function() {
+    MentionView.prototype.tagName = 'tr';
+    MentionView.prototype.initialize = function() {
       this.template = _.template($("#filing-row-template").html());
       this.mobileTemplate = _.template($("#mobile-filing-row-template").html());
       return this.render();
     };
-    FilingView.prototype.render = function() {
+    MentionView.prototype.render = function() {
       var mobileEl;
       $(this.el).html(this.template(this.model.toJSON()));
       if (this.model.get('initialLoad')) {
@@ -158,7 +146,7 @@
         return $("#mobile-filings tbody").prepend(mobileEl);
       }
     };
-    return FilingView;
+    return MentionView;
   })();
   Settings = (function() {
     __extends(Settings, Backbone.Model);
@@ -202,7 +190,7 @@
       if (this.get('apikey').length > 0) {
         window.location.search = "?apikey=" + (this.get('apikey')) + "&notify=" + (this.get('showNotifications'));
       }
-      return filings.getFilings(true);
+      return mentions.getMentions(true);
     };
     return Settings;
   })();
@@ -223,9 +211,9 @@
   })();
   $(document).ready(function() {
     title = $("title").html();
-    filings = new Filings();
+    mentions = new Mentions();
     appSettings = new Settings();
-    filings.getFilings(true);
+    mentions.getMentions(true);
     if (appSettings.get('apikey')) {
       $("#filing-content").show();
     } else {
@@ -242,7 +230,7 @@
       return appSettings.save();
     });
     $("#update-now").bind('click', function() {
-      return filings.getFilings();
+      return mentions.getMentions();
     });
     $("#welcome-enter-api-key").bind('click', function() {
       return $("#settings").modal('show');

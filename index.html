@@ -4,7 +4,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>electronic filings dashboard</title>
+    <title>Paper of (The) Record</title>
     <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
     <link href="dashboard.css" rel="stylesheet">
@@ -20,7 +20,7 @@
           <h3>settings</h3>
         </div>
         <div class="modal-body">
-          <p>This application requires an API key from The New York Times. <a href="http://developer.nytimes.com/apps/register" target="_new">Sign up for a key</a>.</p>
+          <p>This application requires an API key from The Sunlight Foundation. <a href="http://services.sunlightlabs.com/accounts/register" target="_new">Sign up for a key</a>.</p>
           <form>
             <label>API key</label>
             <input id="apikey" name="apikey" type="text" class="input-large span4" placeholder="Enter API key">
@@ -40,10 +40,9 @@
           <h3>about</h3>
         </div>
         <div class="modal-body">
-          <p>This dashboard was created to make it easier to track filings as they are reported to the Federal Election Commission.</p>
-          <p>It includes all reports that are filed electronically -- presidential and House candidates, as well as most political action committees. Senate candidates do not file their reports electronically.</p>
-          <p>The data is updated every 15 minutes.</p>
-          <p>Created by <a href="http://github.com/bycoffe">Aaron Bycoffe</a></p>
+          <p>This dashboard shows when The New York Times - sometimes known as "<a href="http://en.wikipedia.org/wiki/Newspaper_of_record">the newspaper of record</a>" - is mentioned on the floor of the U.S. House of Representatives and the U.S. Senate.</p>
+          <p>It uses the Capitol Words API from The Sunlight Foundation.</p>
+          <p>Created by <a href="http://github.com/dwillis">Derek Willis</a></p>
         </div>
       </div>
 
@@ -51,18 +50,16 @@
         <div class="span3 offset9 top-button">
           <a class="btn" data-toggle="modal" href="#settings"><i class="icon-cog"></i> Settings</a>
           <a class="btn" data-toggle="modal" href="#about"><i class="icon-info-sign"></i> About</a>
-          <a href="http://developer.nytimes.com/docs/campaign_finance_api">
-            <img src="http://graphics8.nytimes.com/packages/images/developer/logos/poweredby_nytimes_65a.png">
-          </a>
+          <a href="http://capitolwords.org/api/">Capitol Words</a>
         </div>
       </div>
 
       <div class="row">
         <div class="page-header span12">
-          <h1>electronic filings dashboard</h1>
+          <h1>The Paper of (The Congressional) Record</h1>
           <h1>
             <small>
-              powered by <a href="http://developer.nytimes.com/docs/campaign_finance_api">the New York Times campaign finance API</a>
+              powered by <a href="http://services.sunlightlabs.com/accounts/register">the Capitol Words API</a>
             </small>
           </h1>
         </div>
@@ -72,7 +69,7 @@
         <div class="span8 alert alert-info">
           <p><strong>Welcome.</strong></p>
           <p>
-             To use the dashboard you'll need an API key from The New York Times. <a href="http://developer.nytimes.com/apps/register" target="_new">Get one here</a>.
+             To use the dashboard you'll need an API key from The Sunlight Foundation. <a href="http://services.sunlightlabs.com/accounts/register" target="_new">Get one here</a>.
           </p>
           <p>
             If you already have an API key, <span id="welcome-enter-api-key">enter it here</span>.
@@ -86,9 +83,6 @@
           <div class="span2">
             <button class="btn" type="button" id="update-now"><i class="icon-refresh"></i> Update now</button>
           </div>
-          <div class="span2 offset8 alignRight">
-            <i class="icon-pencil"></i> Amendment
-          </div>
         </div>
 
         <div class="row">
@@ -99,13 +93,13 @@
         <table id="filings" class="table table-striped hidden-phone">
           <thead>
               <tr>
-                  <th class="table-committee">Committee</th>
-                  <th class="table-form">Form</th>
-                  <th class="table-amendment"></th>
+                  <th class="table-congress">Congress</th>
+                  <th class="table-date">Date</th>
+                  <th class="table-chamber">Chamber</th>
+                  <th class="table-speaker">Speaker</th>
+                  <th class="table-state">State</th>
+                  <th class="table-party">Party</th>
                   <th class="table-title">Title</th>
-                  <th class="table-from">From</th>
-                  <th class="table-to">To</th>
-                  <th class="table-to">Raised</th>
               </tr>
           </thead>
           <tbody data-spy="scroll">
@@ -121,35 +115,28 @@
     </div>
 
     <script type="text/html" id="filing-row-template">
-      <td class="table-committee" rel="tooltip" title="<%= full_committee_type %>"><a href="http://images.nictusa.com/cgi-bin/fecimg/?<%= committee_id %>"><%= committee_name %></a></td>
-      <td><%= form_type %></td>
-      <td>
-      <% if (is_amendment) { %>
-        <i title="This is an amendment" class="icon-pencil"></i>
-      <% } %>
-      </td>
-      <td><a href="<%= fec_uri %>"><%= report_title %></a></td>
-      <td><%= date_coverage_from %></td>
-      <td><%= date_coverage_to %></td>
-      <td><%= raised %></td>
+      <td class="table-congress"><%= congress %></td>
+      <td><%= date %></td>
+      <td><%= chamber %></td>
+      <td><a href="<%= speaker_bioguide %>"><%= speaker %></a></td>
+      <td><%= speaker_state %></td>
+      <td><%= party %></td>
+      <td><a href="<%= capitolwords_url %>"><%= title %></a></td>
     </script>
 
     <script type="text/html" id="mobile-filing-row-template">
       <td>
           <div class="row">
-            <strong>Committee:</strong> <a href="http://images.nictusa.com/cgi-bin/fecimg/?<%= committee_id %>"><%= committee_name %></a>
+            <strong>Congress:</strong> <%= congress %></a>
           </div>
           <div class="row">
-            <strong>Form:</strong> <%= form_type %>
-              <% if (is_amendment) { %>
-                  <i title="This is an amendment" class="icon-pencil"></i>
-              <% } %>
-            </div>
+            <strong>Date:</strong> <%= date %>
+          </div>
+          <div class="row">
+            <strong>Speaker:</strong> <%= speaker %>
+          </div>
             <div class="row">
-              <strong>Title:</strong> <a href="<%= fec_uri %>"><%= report_period %></a>
-            </div>
-            <div class="row">
-              <strong>Raised:</strong> <%= raised %>
+              <strong>Title:</strong> <a href="<%= capitolwords_url %>"><%= title %></a>
             </div>
           </div>
       </td>
