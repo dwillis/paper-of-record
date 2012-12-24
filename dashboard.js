@@ -93,7 +93,7 @@
         },
         success: __bind(function(data) {
           var result, _i, _len, _ref, _results;
-          _ref = data.results;
+          _ref = _.sortBy(data.results, function(r){ return r['date']}).reverse();
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             result = _ref[_i];
