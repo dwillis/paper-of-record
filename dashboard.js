@@ -87,7 +87,7 @@
       newMentions = false;
       $.ajax({
         dataType: 'jsonp',
-        url: 'http://capitolwords.org/api/text.json?phrase=new+york+times&start_date=2012-01-01&',
+        url: 'http://capitolwords.org/api/text.json?phrase=propublica&start_date=2013-01-01&',
         data: {
           'apikey': $("#apikey").val()
         },
